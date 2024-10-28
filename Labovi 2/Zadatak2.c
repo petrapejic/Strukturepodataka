@@ -1,102 +1,228 @@
-/*Zadatak 2*/
+/* Definirati strukturu osoba(ime, prezime, godina roðenja) i napisati program koji :
+A.dinamièki dodaje novi element na poèetak liste,
+B.ispisuje listu,
+C.dinamièki dodaje novi element na kraj liste,
+D.pronalazi element u listi(po prezimenu),
+E.briše odreðeni element iz liste,
+U zadatku se ne smiju koristiti globalne varijable.*/
 
 #define _CRT_SECURE_NO_WARNINGS
-#include #include
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#define MAX 20
+#define ERROR_OPENING_FILE -1
+#define BUFFER_SIZE 1024
+#define EXIT_SUCCESS 0
+
+struct _person;
 typedef struct _person* position;
+
 typedef struct _person {
-	// data
-	char fname[32], lname[32];
-	int birth_year;
-	//link
-	position next;
+    char first[MAX];
+    char last[MAX];
+    int year;
+
+    position next;
 }person;
 
-position create_person(char* fname, char* lname, int birth_year);
-int prepend_list(position head, char* fname, char* lname, int birth_year);
-int append_list(position head, char* fname, char* lname, int birth_year);
-int insert_after(position previous, position to_insert);
-int print_list(position first);
-position find_last(position head);
-position find_by_lname(position first, char* lname);
+void inputNew(position newPerson);
+int addToStart(position head);
+int printList(position firstPerson);
+int addToEnd(position head);
+position findLast(position head);
+position findByName(position firstPerson, char* lastName);
+int deletePerson(position head, char* lastName);
+position findPrev(position firstPerson, char* lastName);
 
 int main()
 {
-	person head = { .fname = "", .lname = "", .birth_year = 0, .next = NULL };
-	return 0;
+    //deklaracija head
+    position head = NULL;
+    head = (position)malloc(sizeof(person));
+    if (head == NULL)
+    {
+        printf("Pogreska prilikom alokacije memorije\n");
+        return ERROR_OPENING_FILE;
+    }
+    head->next = NULL;
+
+    //umetanje na pocetak
+    addToStart(head);
+
+    //ispis liste
+    printList(head->next);
+
+    //umetanje na kraj
+    addToEnd(head);
+
+    //ispis liste
+    printList(head->next);
+
+    //pronadi po imenu
+    printf("\nUnesite prezime za naci: ");
+    char Last[MAX];
+    char* pLast = NULL;
+    pLast = &Last[0];
+    fgets(Last, sizeof(Last), stdin);
+    Last[strcspn(Last, "\n")] = '\0';
+
+    position PersonLastName = findByName(head->next, pLast);
+
+    if (PersonLastName != NULL) {
+        printf("\nTrazena osoba je %s %s, rodena %d  godine", PersonLastName->first, PersonLastName->last, PersonLastName->year);
+    }
+    else {
+        printf("\nOsoba nije pronadena.\n");
+    }
+    //izbrisi po imenu
+    printf("\nUnesite prezime za izbrisati: ");
+    char DelLast[MAX];
+    char* pDelLast = NULL;
+    pDelLast = &DelLast[0];
+    fgets(DelLast, sizeof(DelLast), stdin);
+    DelLast[strcspn(DelLast, "\n")] = '\0';
+
+    deletePerson(head, pDelLast);
+
+    //ispis liste
+    printList(head->next);
+
+    return 0;
 }
 
-position create_person(char* fname, char* lname, int birth_year)
+void inputNew(position newPerson)
 {
-	position new_person = NULL;
-
-	new_person = (position*)malloc(sizeof(person));
-	if (!new_person) {
-		printf("Malloc failed in function create_person()\n");
-		return NULL;
-	}
-
-	strcpy(new_person->fname, fname);
-	strcpy(new_person->lname, lname);
-	new_person->birth_year = birth_year;
-	new_person->next = NULL;
-
-	return new_person;
+    printf("\nUnesi ime \n");
+    fgets(newPerson->first, MAX, stdin);
+    newPerson->first[strcspn(newPerson->first, "\n")] = '\0';
+    printf("Unesi prezime \n");
+    fgets(newPerson->last, MAX, stdin);
+    newPerson->last[strcspn(newPerson->last, "\n")] = '\0';
+    printf("Unesi godinu \n");
+    scanf("%d", &newPerson->year);
+    while (getchar() != '\n');
 }
 
-int prepend_list(position head, char* fname, char* lname, int birth_year)
+
+//umetanje na pocetak liste
+int addToStart(position head)
 {
-	position new_person = NULL;
+    //deklaracija newPerson
+    position newPerson1 = NULL;
+    newPerson1 = (position)malloc(sizeof(person));
+    if (newPerson1 == NULL)
+    {
+        printf("Pogreska prilikom alokacije memorije\n");
+        return ERROR_OPENING_FILE;
+    }
 
-	new_person = create_person(fname, lname, birth_year);
-	if (!new_person) {
-		return -1;
-	}
-	new_person = head->next;
-	head->next = new_person;
+    inputNew(newPerson1);
 
-	return EXIT_SUCCESS;
+    //umetanje
+    newPerson1->next = head->next;
+    head->next = newPerson1;
+    return EXIT_SUCCESS;
 }
 
 
-int append_list(position head, char* fname, char* lname, int birth_year) {
-	position new_person = NULL, last = NULL;
+int printList(position firstPerson)
+{
+    position temp = firstPerson;
 
-	new_person = create_person(fname, lname, birth_year);
-	if (!new_person) {
-		return -1;
-	}
+    while (temp)
+    {
+        printf("\n");
+        printf("\nime: %s", temp->first);
+        printf("\nprezime: %s", temp->last);
+        printf("\ngodina: %d", temp->year);
+        printf("\n");
+        temp = temp->next;
+    }
 
-	last = find_last(head);
-	insert_after(last, new_person);
+    return EXIT_SUCCESS;
 }
 
-int print_list(position first) {
-	position temp = first;
+int addToEnd(position head)
+{
+    //zadnja osoba
+    position lastPerson = NULL;
+    lastPerson = (position)malloc(sizeof(person));
+    if (lastPerson == NULL)
+    {
+        printf("Pogreska prilikom alokacije memorije\n");
+        return ERROR_OPENING_FILE;
+    }
+    lastPerson = findLast(head);
 
-	while (temp) {
-		printf("First name: %s\nLast name: %s\nBirth year: %d ", temp->fname, temp->lname, temp->birth_year);
-		temp = temp->next;
-	}
-	return EXIT_SUCCESS;
+    //nova zadnja osoba
+    position newPerson2 = NULL;
+    newPerson2 = (position)malloc(sizeof(person));
+    if (newPerson2 == NULL)
+    {
+        printf("Pogreska prilikom alokacije memorije\n");
+        return ERROR_OPENING_FILE;
+    }
+    inputNew(newPerson2);
+    //umetanje
+    newPerson2->next = lastPerson->next;
+    lastPerson->next = newPerson2;
+
+    return EXIT_SUCCESS;
 }
 
-position find_last(position head) {
-	position temp = head;
-
-	while (temp->next) {
-		temp = temp->next;
-	}
-	return temp;
+position findLast(position head)
+{
+    position temp = head;
+    while (temp->next)
+    {
+        temp = temp->next;
+    }
+    return temp;
 }
 
-position find_by_lname(position first, char* lname) {
-	position temp = first;
+position findByName(position firstPerson, char* lastName)
+{
+    position temp = firstPerson;
 
-	while (temp) {
-		if (strcmp(temp->lname, lname) == 0) {
-			return temp;
-		}
-		temp = temp->next;
-	}
-	return NULL;
+    while (temp)
+    {
+        if (strcmp(temp->last, lastName) == 0)
+            return temp;
+        temp = temp->next;
+    }
+
+    //ako ne nade:
+    return NULL;
+}
+
+int deletePerson(position head, char* lastName)
+{
+    //prethodna osoba
+    position prevPerson = findPrev(head, lastName);
+    if (prevPerson == NULL || prevPerson->next == NULL) {
+        printf("Osoba nije pronadena.\n");
+        return EXIT_FAILURE;
+    }
+    //osoba koju cemo brisat
+    position personToDelete = prevPerson->next;
+
+    prevPerson->next = personToDelete->next;
+    free(personToDelete);
+
+    return EXIT_SUCCESS;
+}
+
+position findPrev(position firstPerson, char* lastName)
+{
+    position prevPerson = firstPerson;
+    position currentPerson = firstPerson->next;
+
+    while ((currentPerson) && (strcmp(currentPerson->last, lastName) != 0))
+    {
+        prevPerson = currentPerson;
+        currentPerson = currentPerson->next;
+    }
+    if (currentPerson) return prevPerson;
+    return NULL;
 }
